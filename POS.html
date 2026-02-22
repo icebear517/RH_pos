@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卡里善之樹 - 專櫃 POS 系統</title>
+    <style>
+        /* 大字體與高對比度設計，適合專櫃明亮環境 */
+        body { font-family: '微軟正黑體', sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; font-size: 36px; color: #2c3e50; margin-bottom: 10px; }
+        .status { text-align: center; font-size: 20px; color: #e67e22; margin-bottom: 20px; font-weight: bold; }
+        
+        /* 條碼輸入區 */
+        .input-group { display: flex; margin-bottom: 20px; }
+        #barcodeInput { flex: 1; padding: 20px; font-size: 32px; border: 3px solid #3498db; border-radius: 8px; outline: none; }
+        #barcodeInput:focus { border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
+        
+        /* 購物車區塊 */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border-bottom: 2px solid #eee; padding: 15px 10px; text-align: left; font-size: 26px; }
+        th { background-color: #ecf0f1; color: #7f8c8d; font-size: 22px; }
+        .qty-btn { font-size: 24px; padding: 5px 15px; margin: 0 10px; cursor: pointer; }
+        
+        /* 總計與折扣 */
+        .summary { background: #e8f8f5; padding: 20px; border-radius: 8px; font-size: 32px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .discount-select { font-size: 24px; padding: 10px; border-radius: 5px; }
+        .total-price { color: #c0392b; font-size: 40px; }
+        
+        /* 按鈕區 */
+        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; }
+        button { flex: 1; min-width: 150px; padding: 25px; font-size: 30px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; color: white; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        .btn-checkout { background-color: #27ae60; }
+        .btn-return-mode { background-color: #f39c12; }
+        .btn-clear { background-color: #95a5a6; }
+        
+        /* 退貨模式樣式 */
+        body.return-active { background-color: #fadbd8; }
+        .return-active h1 { color: #c0392b; }
+        .return-active .btn-checkout { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 id="modeTitle">卡里善之樹 收銀台 (售出模式)</h1>
+    <div id="systemStatus" class="status">連線中，正在載入商品資料...</div>
+
+    <div class="input-group">
+        <input type="text" id="barcodeInput" placeholder="請用條碼槍掃描，或輸入條碼後按Enter" autofocus autocomplete="off">
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>品名</th>
+                <th>單價</th>
+                <th>數量</th>
+                <th>小計</th>
+            </tr>
+        </thead>
+        <tbody id="cartBody">
+            </tbody>
+    </table>
+
+    <div class="summary">
+        <div>
+            <label for="discountMode">折扣：</label>
+            <select id="discountMode" class="discount-select">
+                <option value="none">無折扣</option>
+                </select>
+        </div>
+        <div>
+            總計：<span id="totalAmount" class="total-price">$0</span>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-clear" onclick="clearCart()">清除整單</button>
+        <button class="btn-return-mode" onclick="toggleReturnMode()" id="returnBtn">切換為「退貨」</button>
+        <button class="btn-checkout" onclick="checkout()" id="checkoutBtn">確認結帳</button>
+    </div>
+</div>
+
+<script>
+    // 您剛剛部署好的 GAS API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbxHt0RfE0cSObogOoj1yUx6cQZBHJbYlM0ndj1GXHwYPPj8SHe-e5vNkGact3l2Oo7b6A/exec";
+    
+    let productsDB = [];
+    let discountsDB = [];
+    let cart = [];
+    let isReturnMode = false;
+
+    // 網頁載入時，立刻去試算表抓商品和折扣資料
+    window.onload = async () => {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            if(data.status === 'success') {
+                productsDB = data.products;
+                discountsDB = data.discounts;
+                updateDiscountSelect();
+                document.getElementById('systemStatus').innerText = "✅ 系統已連線，可以開始掃碼";
+                document.getElementById('systemStatus').style.color = "#27ae60";
+            }
+        } catch (error) {
+            document.getElementById('systemStatus').innerText = "❌ 無法連線至試算表，請檢查網路";
+            document.getElementById('systemStatus').style.color = "#c0392b";
+        }
+    };
+
+    // 把試算表的折扣選項放入選單
+    function updateDiscountSelect() {
+        const select = document.getElementById('discountMode');
+        discountsDB.forEach(d => {
+            const option = document.createElement('option');
+            option.value = d.code;
+            option.text = d.code + (d.type === '折數' ? ` (${d.value*10}折)` : ` (折$${d.value})`);
+            select.appendChild(option);
+        });
+        select.addEventListener('change', renderCart);
+    }
+
+    // 監聽條碼槍輸入 (條碼槍掃完通常會自動送出 Enter 鍵)
+    document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const barcode = this.value.trim();
+            if (barcode !== "") {
+                addToCart(barcode);
+                this.value = ''; // 清空輸入框準備掃下一個
+            }
+        }
+    });
+
+    // 將商品加入購物車
+    function addToCart(barcode) {
+        const product = productsDB.find(p => p.barcode === barcode);
+        if (!product) {
+            alert("找不到此商品條碼：" + barcode);
+            return;
+        }
+
+        const existingItem = cart.find(item => item.barcode === barcode);
+        if (existingItem) {
+            existingItem.qty += 1;
+        } else {
+            cart.push({ ...product, qty: 1 });
+        }
+        renderCart();
+    }
+
+    // 渲染購物車畫面與計算總計
+    function renderCart() {
+        const tbody = document.getElementById('cartBody');
+        tbody.innerHTML = '';
+        let subtotal = 0;
+
+        cart.forEach((item, index) => {
+            const itemTotal = item.price * item.qty;
+            subtotal += itemTotal;
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>$${item.price}</td>
+                    <td>
+                        <button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>
+                        ${item.qty}
+                        <button class="qty-btn" onclick="changeQty(${index}, 1)">+</button>
+                    </td>
+                    <td>$${itemTotal}</td>
+                </tr>
+            `;
+        });
+
+        // 計算折扣
+        let finalTotal = subtotal;
+        const selectedDiscountCode = document.getElementById('discountMode').value;
+        if (selectedDiscountCode !== 'none') {
+            const discount = discountsDB.find(d => d.code === selectedDiscountCode);
+            if (discount.type === '折數') {
+                finalTotal = Math.round(subtotal * discount.value);
+            } else if (discount.type === '現金') {
+                finalTotal = subtotal - discount.value;
+            }
+        }
+        
+        // 如果是退貨模式，顯示負數
+        const displayTotal = isReturnMode ? finalTotal * -1 : finalTotal;
+        document.getElementById('totalAmount').innerText = `$${displayTotal}`;
+    }
+
+    // 更改數量
+    function changeQty(index, delta) {
+        cart[index].qty += delta;
+        if (cart[index].qty <= 0) {
+            cart.splice(index, 1); // 數量為0則移除
+        }
+        renderCart();
+        document.getElementById('barcodeInput').focus(); // 讓游標回到輸入框
+    }
+
+    // 清空購物車
+    function clearCart() {
+        cart = [];
+        document.getElementById('discountMode').value = 'none';
+        renderCart();
+        document.getElementById('barcodeInput').focus();
+    }
+
+    // 切換退貨/售出模式
+    function toggleReturnMode() {
+        isReturnMode = !isReturnMode;
+        document.body.classList.toggle('return-active');
+        
+        if (isReturnMode) {
+            document.getElementById('modeTitle').innerText = "卡里善之樹 收銀台 (退貨模式)";
+            document.getElementById('returnBtn').innerText = "切換為「售出」";
+            document.getElementById('checkoutBtn').innerText = "確認退貨";
+        } else {
+            document.getElementById('modeTitle').innerText = "卡里善之樹 收銀台 (售出模式)";
+            document.getElementById('returnBtn').innerText = "切換為「退貨」";
+            document.getElementById('checkoutBtn').innerText = "確認結帳";
+        }
+        renderCart();
+        document.getElementById('barcodeInput').focus();
+    }
+
+    // 送出結帳/退貨資料給 Google 試算表 API
+    async function checkout() {
+        if (cart.length === 0) {
+            alert("購物車是空的！");
+            return;
+        }
+
+        document.getElementById('checkoutBtn').innerText = "處理中...";
+        document.getElementById('checkoutBtn').disabled = true;
+
+        const selectedDiscountCode = document.getElementById('discountMode').value;
+        const discountName = selectedDiscountCode === 'none' ? '無' : selectedDiscountCode;
+
+        // 計算分攤到單品的最終價格 (為了精確記帳)
+        const totalBeforeDiscount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const finalTotal = parseInt(document.getElementById('totalAmount').innerText.replace('$', '').replace('-', ''));
+        const ratio = totalBeforeDiscount === 0 ? 1 : finalTotal / totalBeforeDiscount;
+
+        const payload = {
+            isReturn: isReturnMode,
+            discountName: discountName,
+            items: cart.map(item => ({
+                barcode: item.barcode,
+                qty: item.qty,
+                finalPrice: Math.round((item.price * item.qty * ratio) / item.qty) // 折扣後單價
+            }))
+        };
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                // no-cors 或一般模式視 GAS CORS 狀況，通常 GAS 用 text/plain 會自動過
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+            });
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                alert(`交易成功！訂單編號：${result.orderId}`);
+                clearCart();
+            } else {
+                alert("寫入失敗：" + result.message);
+            }
+        } catch (error) {
+            alert("連線錯誤，請確定網路正常。");
+        }
+
+        document.getElementById('checkoutBtn').innerText = isReturnMode ? "確認退貨" : "確認結帳";
+        document.getElementById('checkoutBtn').disabled = false;
+        document.getElementById('barcodeInput').focus();
+    }
+</script>
+
+</body>
+</html>
