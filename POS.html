@@ -6,338 +6,371 @@
     <title>卡里善之樹 - 專櫃 POS 系統</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        /* 明亮純白底色與高對比度文字，維持老花眼友善 */
         body { font-family: '微軟正黑體', sans-serif; background-color: #ffffff; margin: 0; padding: 20px; color: #444; }
         .container { max-width: 900px; margin: auto; background: #ffffff; padding: 20px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; }
         h1 { text-align: center; font-size: 36px; color: #555; margin-bottom: 10px; letter-spacing: 2px; }
-        .status { text-align: center; font-size: 20px; color: #ffb7b2; margin-bottom: 20px; font-weight: bold; }
+        .status { text-align: center; font-size: 20px; margin-bottom: 20px; font-weight: bold; }
         
-        /* 條碼輸入區與相機按鈕 */
+        /* 售出模式樣式 */
         .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        #barcodeInput { flex: 1; min-width: 250px; padding: 20px; font-size: 32px; border: 3px solid #b5eada; border-radius: 12px; outline: none; background-color: #fafafa; color: #333; transition: 0.3s; }
+        #barcodeInput { flex: 1; min-width: 250px; padding: 20px; font-size: 32px; border: 3px solid #b5eada; border-radius: 12px; outline: none; background-color: #fafafa; transition: 0.3s; }
         #barcodeInput:focus { border-color: #ffb7b2; box-shadow: 0 0 15px rgba(255, 183, 178, 0.4); background-color: #ffffff; }
-        
-        .btn-camera { background-color: #a8d8ea; color: #444; font-size: 24px; padding: 0 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.06); white-space: nowrap; }
-        .btn-camera:active { transform: scale(0.97); }
+        .btn-camera { background-color: #a8d8ea; color: #444; font-size: 24px; padding: 0 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; }
         .btn-camera.active { background-color: #ffb7b2; color: #fff; }
-
-        /* 相機預覽區 */
         #reader { width: 100%; max-width: 500px; margin: 0 auto 20px; border-radius: 12px; overflow: hidden; display: none; }
         
-        /* 購物車區塊 */
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { border-bottom: 2px solid #f5f5f5; padding: 18px 10px; text-align: left; font-size: 26px; }
-        th { background-color: #ffffff; color: #999; font-size: 22px; font-weight: normal; }
-        .qty-btn { font-size: 24px; padding: 5px 15px; margin: 0 10px; cursor: pointer; background-color: #f0f0f0; border: none; border-radius: 8px; color: #555; transition: 0.2s; }
-        .qty-btn:active { background-color: #e0e0e0; }
+        th { background-color: #ffffff; color: #999; font-size: 22px; }
+        .qty-btn { font-size: 24px; padding: 5px 15px; margin: 0 10px; cursor: pointer; background-color: #f0f0f0; border: none; border-radius: 8px; transition: 0.2s; }
         
-        /* 總計與折扣 */
-        .summary { background: #ffffff; border: 2px dashed #dcdde1; padding: 20px; border-radius: 12px; font-size: 32px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-        .discount-select { font-size: 24px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; color: #444; outline: none; }
+        .summary { background: #ffffff; border: 2px dashed #dcdde1; padding: 20px; border-radius: 12px; font-size: 32px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .discount-select { font-size: 24px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; outline: none; }
         .total-price { color: #ff9aa2; font-size: 42px; }
         
-        /* 粉彩色系按鈕區 */
         .btn-group { display: flex; gap: 15px; flex-wrap: wrap; }
-        button { flex: 1; min-width: 150px; padding: 25px; font-size: 30px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; color: #4a4a4a; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.06); letter-spacing: 1px; }
-        button:active { transform: scale(0.97); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        
+        button { flex: 1; min-width: 150px; padding: 25px; font-size: 30px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; color: #4a4a4a; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+        button:active { transform: scale(0.97); }
         .btn-checkout { background-color: #b5eada; } 
         .btn-return-mode { background-color: #ffe1a8; } 
         .btn-clear { background-color: #e2f0cb; } 
         
-        /* 退貨模式樣式 */
-        body.return-active { background-color: #fff0f0; } 
-        .return-active h1 { color: #ff9aa2; }
-        .return-active .container { border-color: #ffe6e6; box-shadow: 0 8px 30px rgba(255, 154, 162, 0.15); }
-        .return-active .btn-checkout { background-color: #ffb7b2; color: #fff; } 
+        /* 退貨專區樣式 */
+        #returnView { display: none; }
+        .order-card { background: #fffaf0; border: 2px solid #ffe1a8; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fff; padding-bottom: 10px; margin-bottom: 10px; font-size: 24px; font-weight: bold; color: #d35400; }
+        .order-item { display: flex; justify-content: space-between; align-items: center; font-size: 22px; padding: 10px 0; border-bottom: 1px dashed #ccc; }
+        .return-btn { font-size: 20px; padding: 10px 20px; background-color: #ff9aa2; color: white; border: none; border-radius: 8px; cursor: pointer; margin-left: 10px; }
+        .return-btn.full { background-color: #e74c3c; font-size: 24px; padding: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 id="modeTitle">卡里善之樹 收銀台 (售出模式)</h1>
-    <div id="systemStatus" class="status">連線中，正在載入商品資料...</div>
+    <h1 id="modeTitle">卡里善之樹 收銀台</h1>
+    <div id="systemStatus" class="status" style="color:#ffb7b2;">連線中，載入資料...</div>
 
-    <div class="input-group">
-        <input type="text" id="barcodeInput" placeholder="請掃描，或輸入條碼按Enter" autofocus autocomplete="off">
-        <button id="cameraBtn" class="btn-camera" onclick="toggleCamera()">📷 開啟相機</button>
-    </div>
-    
-    <div id="reader"></div>
-
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>品名</th>
-                    <th>單價</th>
-                    <th>數量</th>
-                    <th>小計</th>
-                </tr>
-            </thead>
-            <tbody id="cartBody">
-                </tbody>
-        </table>
+    <div class="btn-group" style="margin-bottom: 30px;">
+        <button id="tabSales" class="btn-checkout" style="background:#b5eada;" onclick="switchTab('sales')">🛒 售出結帳</button>
+        <button id="tabReturn" class="btn-return-mode" style="background:#f5f5f5; color:#999;" onclick="switchTab('return')">🔄 今日訂單退貨</button>
     </div>
 
-    <div class="summary">
-        <div>
-            <label for="discountMode">折扣：</label>
-            <select id="discountMode" class="discount-select">
-                <option value="none">無折扣</option>
-            </select>
+    <div id="salesView">
+        <div class="input-group">
+            <input type="text" id="barcodeInput" placeholder="請掃描，或輸入條碼按Enter" autocomplete="off">
+            <button id="cameraBtn" class="btn-camera" onclick="toggleCamera()">📷 開啟相機</button>
         </div>
-        <div>
-            總計：<span id="totalAmount" class="total-price">$0</span>
+        <div id="reader"></div>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead><tr><th>品名</th><th>單價</th><th>數量</th><th>小計</th></tr></thead>
+                <tbody id="cartBody"></tbody>
+            </table>
+        </div>
+        <div class="summary">
+            <div><label>折扣：</label><select id="discountMode" class="discount-select"><option value="none">無折扣</option></select></div>
+            <div>總計：<span id="totalAmount" class="total-price">$0</span></div>
+        </div>
+        <div class="btn-group">
+            <button class="btn-clear" onclick="clearCart()">清除整單</button>
+            <button class="btn-checkout" onclick="checkout()" id="checkoutBtn">確認結帳</button>
         </div>
     </div>
 
-    <div class="btn-group">
-        <button class="btn-clear" onclick="clearCart()">清除整單</button>
-        <button class="btn-return-mode" onclick="toggleReturnMode()" id="returnBtn">切換為「退貨」</button>
-        <button class="btn-checkout" onclick="checkout()" id="checkoutBtn">確認結帳</button>
+    <div id="returnView">
+        <h2 style="color: #c0392b; text-align: center;">選擇要退貨的今日訂單</h2>
+        <div id="ordersList">
+            </div>
     </div>
 </div>
 
 <script>
-    // 您的 GAS API 網址
     const API_URL = "https://script.google.com/macros/s/AKfycbxHt0RfE0cSObogOoj1yUx6cQZBHJbYlM0ndj1GXHwYPPj8SHe-e5vNkGact3l2Oo7b6A/exec";
     
     let productsDB = [];
     let discountsDB = [];
+    let todayOrdersDB = [];
     let cart = [];
-    let isReturnMode = false;
     
-    // 相機相關變數
-    let html5QrCode;
-    let isCameraOpen = false;
-    // 避免相機連續掃描同一個商品太快，設定一個冷卻時間
-    let lastScanTime = 0; 
-    let lastScannedCode = "";
+    // --- 音效產生器 (Web Audio API) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    
+    function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); if(audioCtx.state === 'suspended') audioCtx.resume(); }
 
-    window.onload = async () => {
+    function playBeep() {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5音
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        osc.start(); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playSuccess() {
+        initAudio();
+        const playNote = (freq, start, dur) => {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.3, start);
+            osc.start(start); gain.gain.exponentialRampToValueAtTime(0.01, start + dur); osc.stop(start + dur);
+        };
+        playNote(1046.50, audioCtx.currentTime, 0.15); // C6
+        playNote(1318.51, audioCtx.currentTime + 0.15, 0.4); // E6
+    }
+
+    // --- 系統初始化 ---
+    window.onload = fetchData;
+
+    async function fetchData() {
         try {
+            document.getElementById('systemStatus').innerText = "連線中，載入資料...";
+            document.getElementById('systemStatus').style.color = "#ffb7b2";
             const response = await fetch(API_URL);
             const data = await response.json();
             if(data.status === 'success') {
-                productsDB = data.products;
-                discountsDB = data.discounts;
+                productsDB = data.products; discountsDB = data.discounts; todayOrdersDB = data.todayOrders;
                 updateDiscountSelect();
-                document.getElementById('systemStatus').innerText = "✅ 系統已連線，可以開始掃碼";
+                document.getElementById('systemStatus').innerText = "✅ 系統準備就緒";
                 document.getElementById('systemStatus').style.color = "#27ae60";
+                renderReturnOrders(); // 預先渲染退貨列表
             }
         } catch (error) {
-            document.getElementById('systemStatus').innerText = "❌ 無法連線至試算表，請檢查網路";
-            document.getElementById('systemStatus').style.color = "#ff9aa2";
+            document.getElementById('systemStatus').innerText = "❌ 連線失敗，請檢查網路";
         }
-    };
+    }
 
+    // --- 頁籤切換 ---
+    function switchTab(tab) {
+        if(tab === 'sales') {
+            document.getElementById('salesView').style.display = 'block';
+            document.getElementById('returnView').style.display = 'none';
+            document.getElementById('tabSales').style.background = '#b5eada';
+            document.getElementById('tabSales').style.color = '#444';
+            document.getElementById('tabReturn').style.background = '#f5f5f5';
+            document.getElementById('tabReturn').style.color = '#999';
+            document.getElementById('barcodeInput').focus();
+        } else {
+            document.getElementById('salesView').style.display = 'none';
+            document.getElementById('returnView').style.display = 'block';
+            document.getElementById('tabReturn').style.background = '#ffe1a8';
+            document.getElementById('tabReturn').style.color = '#444';
+            document.getElementById('tabSales').style.background = '#f5f5f5';
+            document.getElementById('tabSales').style.color = '#999';
+            renderReturnOrders(); // 確保資料是最新的
+        }
+    }
+
+    // --- 售出結帳邏輯 ---
     function updateDiscountSelect() {
         const select = document.getElementById('discountMode');
+        select.innerHTML = '<option value="none">無折扣</option>';
         discountsDB.forEach(d => {
-            const option = document.createElement('option');
-            option.value = d.code;
-            option.text = d.code + (d.type === '折數' ? ` (${d.value*10}折)` : ` (折$${d.value})`);
-            select.appendChild(option);
+            const opt = document.createElement('option');
+            opt.value = d.code; opt.text = d.code + (d.type === '折數' ? ` (${d.value*10}折)` : ` (折$${d.value})`);
+            select.appendChild(opt);
         });
         select.addEventListener('change', renderCart);
     }
 
-    // 實體條碼槍或鍵盤輸入
     document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             const barcode = this.value.trim();
-            if (barcode !== "") {
-                addToCart(barcode);
-                this.value = ''; 
-            }
+            if (barcode !== "") { addToCart(barcode); this.value = ''; }
         }
     });
 
-    // 開關手機相機功能
-    function toggleCamera() {
-        const readerDiv = document.getElementById('reader');
-        const cameraBtn = document.getElementById('cameraBtn');
-
-        if (!isCameraOpen) {
-            readerDiv.style.display = 'block';
-            cameraBtn.innerText = "關閉相機";
-            cameraBtn.classList.add('active');
-            
-            // 初始化相機
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-            
-            // 優先使用後置鏡頭 (environment)
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-            .catch(err => {
-                alert("無法開啟相機，請確認您已在瀏覽器設定中允許使用相機！");
-                readerDiv.style.display = 'none';
-                cameraBtn.innerText = "📷 開啟相機";
-                cameraBtn.classList.remove('active');
-            });
-            isCameraOpen = true;
-        } else {
-            // 關閉相機
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    readerDiv.style.display = 'none';
-                    cameraBtn.innerText = "📷 開啟相機";
-                    cameraBtn.classList.remove('active');
-                    isCameraOpen = false;
-                });
-            }
-        }
-    }
-
-    // 相機掃描成功時的處理
-    function onScanSuccess(decodedText) {
-        const currentTime = new Date().getTime();
-        // 如果掃描的是同一個條碼，必須間隔 2 秒以上，避免一次加太多個
-        if (decodedText === lastScannedCode && (currentTime - lastScanTime) < 2000) {
-            return; 
-        }
-        
-        lastScannedCode = decodedText;
-        lastScanTime = currentTime;
-        
-        // 發出逼一聲的提示音 (選用，利用瀏覽器內建音效)
-        let beep = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'+Array(1e3).join('123'));
-        beep.play().catch(()=>{}); 
-
-        addToCart(decodedText);
-    }
-
     function addToCart(barcode) {
         const product = productsDB.find(p => p.barcode === barcode);
-        if (!product) {
-            alert("找不到此商品條碼：" + barcode);
-            return;
-        }
+        if (!product) { alert("找不到條碼：" + barcode); return; }
+        
+        playBeep(); // 播放掃碼音效
 
         const existingItem = cart.find(item => item.barcode === barcode);
-        if (existingItem) {
-            existingItem.qty += 1;
-        } else {
-            cart.push({ ...product, qty: 1 });
-        }
+        if (existingItem) existingItem.qty += 1;
+        else cart.push({ ...product, qty: 1 });
         renderCart();
     }
 
     function renderCart() {
-        const tbody = document.getElementById('cartBody');
-        tbody.innerHTML = '';
+        const tbody = document.getElementById('cartBody'); tbody.innerHTML = '';
         let subtotal = 0;
-
         cart.forEach((item, index) => {
-            const itemTotal = item.price * item.qty;
-            subtotal += itemTotal;
-            
-            tbody.innerHTML += `
-                <tr>
-                    <td>${item.name}</td>
-                    <td>$${item.price}</td>
-                    <td>
-                        <button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>
-                        ${item.qty}
-                        <button class="qty-btn" onclick="changeQty(${index}, 1)">+</button>
-                    </td>
-                    <td>$${itemTotal}</td>
-                </tr>
-            `;
+            const itemTotal = item.price * item.qty; subtotal += itemTotal;
+            tbody.innerHTML += `<tr><td>${item.name}</td><td>$${item.price}</td>
+                <td><button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>${item.qty}<button class="qty-btn" onclick="changeQty(${index}, 1)">+</button></td>
+                <td>$${itemTotal}</td></tr>`;
         });
 
         let finalTotal = subtotal;
-        const selectedDiscountCode = document.getElementById('discountMode').value;
-        if (selectedDiscountCode !== 'none') {
-            const discount = discountsDB.find(d => d.code === selectedDiscountCode);
-            if (discount.type === '折數') {
-                finalTotal = Math.round(subtotal * discount.value);
-            } else if (discount.type === '現金') {
-                finalTotal = subtotal - discount.value;
-            }
+        const discCode = document.getElementById('discountMode').value;
+        if (discCode !== 'none') {
+            const discount = discountsDB.find(d => d.code === discCode);
+            finalTotal = discount.type === '折數' ? Math.round(subtotal * discount.value) : subtotal - discount.value;
         }
-        
-        const displayTotal = isReturnMode ? finalTotal * -1 : finalTotal;
-        document.getElementById('totalAmount').innerText = `$${displayTotal}`;
+        document.getElementById('totalAmount').innerText = `$${finalTotal > 0 ? finalTotal : 0}`;
     }
 
     function changeQty(index, delta) {
-        cart[index].qty += delta;
-        if (cart[index].qty <= 0) {
-            cart.splice(index, 1);
-        }
-        renderCart();
+        cart[index].qty += delta; if (cart[index].qty <= 0) cart.splice(index, 1);
+        renderCart(); document.getElementById('barcodeInput').focus();
     }
-
-    function clearCart() {
-        cart = [];
-        document.getElementById('discountMode').value = 'none';
-        renderCart();
-    }
-
-    function toggleReturnMode() {
-        isReturnMode = !isReturnMode;
-        document.body.classList.toggle('return-active');
-        
-        if (isReturnMode) {
-            document.getElementById('modeTitle').innerText = "卡里善之樹 收銀台 (退貨模式)";
-            document.getElementById('returnBtn').innerText = "切換為「售出」";
-            document.getElementById('checkoutBtn').innerText = "確認退貨";
-        } else {
-            document.getElementById('modeTitle').innerText = "卡里善之樹 收銀台 (售出模式)";
-            document.getElementById('returnBtn').innerText = "切換為「退貨」";
-            document.getElementById('checkoutBtn').innerText = "確認結帳";
-        }
-        renderCart();
-    }
+    function clearCart() { cart = []; document.getElementById('discountMode').value = 'none'; renderCart(); }
 
     async function checkout() {
-        if (cart.length === 0) {
-            alert("購物車是空的！");
-            return;
-        }
+        if (cart.length === 0) return alert("購物車是空的！");
+        initAudio(); 
+        
+        const btn = document.getElementById('checkoutBtn');
+        btn.innerText = "處理中..."; btn.disabled = true;
 
-        document.getElementById('checkoutBtn').innerText = "處理中...";
-        document.getElementById('checkoutBtn').disabled = true;
-
-        const selectedDiscountCode = document.getElementById('discountMode').value;
-        const discountName = selectedDiscountCode === 'none' ? '無' : selectedDiscountCode;
-
-        const totalBeforeDiscount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-        const finalTotal = parseInt(document.getElementById('totalAmount').innerText.replace('$', '').replace('-', ''));
-        const ratio = totalBeforeDiscount === 0 ? 1 : finalTotal / totalBeforeDiscount;
+        const discCode = document.getElementById('discountMode').value;
+        const totalBefore = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const finalTotal = parseInt(document.getElementById('totalAmount').innerText.replace('$', ''));
+        const ratio = totalBefore === 0 ? 1 : finalTotal / totalBefore;
 
         const payload = {
-            isReturn: isReturnMode,
-            discountName: discountName,
-            items: cart.map(item => ({
-                barcode: item.barcode,
-                qty: item.qty,
-                finalPrice: Math.round((item.price * item.qty * ratio) / item.qty)
-            }))
+            isReturn: false, discountName: discCode === 'none' ? '無' : discCode,
+            items: cart.map(item => ({ barcode: item.barcode, qty: item.qty, finalPrice: Math.round((item.price * item.qty * ratio) / item.qty) }))
         };
 
         try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-            });
-            const result = await response.json();
-            
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            const result = await res.json();
             if (result.status === 'success') {
-                alert(`交易成功！訂單編號：${result.orderId}`);
+                playSuccess(); // 播放結帳成功音效
+                alert(`交易成功！單號：${result.orderId}`);
                 clearCart();
-            } else {
-                alert("寫入失敗：" + result.message);
+                fetchData(); // 重新抓取資料更新今日訂單
+            } else alert("失敗：" + result.message);
+        } catch (err) { alert("連線錯誤"); }
+
+        btn.innerText = "確認結帳"; btn.disabled = false; document.getElementById('barcodeInput').focus();
+    }
+
+    // --- 退貨邏輯 ---
+    function renderReturnOrders() {
+        const listDiv = document.getElementById('ordersList');
+        listDiv.innerHTML = '';
+        
+        // 整理訂單，計算剩下可退的數量
+        let ordersMap = {};
+        todayOrdersDB.forEach(tx => {
+            let mainId = tx.type === '售出' ? tx.orderId : tx.refOrderId;
+            if(!mainId) return;
+            
+            if(!ordersMap[mainId]) {
+                const dateObj = new Date(tx.time);
+                ordersMap[mainId] = { orderId: mainId, time: `${dateObj.getHours()}:${String(dateObj.getMinutes()).padStart(2, '0')}`, items: {} };
             }
-        } catch (error) {
-            alert("連線錯誤，請確定網路正常。");
+            if(!ordersMap[mainId].items[tx.barcode]) {
+                const p = productsDB.find(p => p.barcode === tx.barcode);
+                ordersMap[mainId].items[tx.barcode] = { name: p ? p.name : '未知商品', barcode: tx.barcode, qtySold: 0, qtyReturned: 0, finalPrice: 0 };
+            }
+            if(tx.type === '售出') {
+                ordersMap[mainId].items[tx.barcode].qtySold += tx.qty;
+                ordersMap[mainId].items[tx.barcode].finalPrice = tx.finalPrice / tx.qty; // 取得單件實收金額
+            } else if (tx.type === '退貨') {
+                ordersMap[mainId].items[tx.barcode].qtyReturned += Math.abs(tx.qty);
+            }
+        });
+
+        let hasReturnable = false;
+        Object.values(ordersMap).reverse().forEach(order => {
+            let orderHtml = `<div class="order-header">單號: ${order.orderId} (${order.time}) 
+                <button class="return-btn full" onclick="processReturn('${order.orderId}', 'all')">退整筆</button></div>`;
+            
+            let itemHtml = ''; let canReturnAny = false;
+            Object.values(order.items).forEach(item => {
+                let leftToReturn = item.qtySold - item.qtyReturned;
+                if(leftToReturn > 0) {
+                    canReturnAny = true;
+                    itemHtml += `<div class="order-item">
+                        <span>${item.name} (可退:${leftToReturn}) 實收:$${item.finalPrice}/件</span>
+                        <div>`;
+                    for(let i=1; i<=leftToReturn; i++) {
+                        itemHtml += `<button class="return-btn" onclick="processReturn('${order.orderId}', '${item.barcode}', ${i}, ${item.finalPrice})">退 ${i} 件</button>`;
+                    }
+                    itemHtml += `</div></div>`;
+                }
+            });
+
+            if(canReturnAny) {
+                hasReturnable = true;
+                listDiv.innerHTML += `<div class="order-card">${orderHtml}${itemHtml}</div>`;
+            }
+        });
+
+        if(!hasReturnable) listDiv.innerHTML = '<h3 style="text-align:center; color:#999;">目前沒有可退貨的訂單</h3>';
+    }
+
+    async function processReturn(orderId, barcodeOrAll, qty = 0, finalPrice = 0) {
+        if(!confirm("確定要執行退貨嗎？庫存將會自動加回。")) return;
+        
+        let itemsToReturn = [];
+        if(barcodeOrAll === 'all') {
+            // 找出該訂單所有可退的商品
+            const txs = todayOrdersDB.filter(tx => tx.orderId === orderId && tx.type === '售出');
+            const returns = todayOrdersDB.filter(tx => tx.refOrderId === orderId && tx.type === '退貨');
+            
+            let itemCalc = {};
+            txs.forEach(tx => {
+                if(!itemCalc[tx.barcode]) itemCalc[tx.barcode] = { qty: 0, finalPrice: tx.finalPrice / tx.qty };
+                itemCalc[tx.barcode].qty += tx.qty;
+            });
+            returns.forEach(tx => {
+                if(itemCalc[tx.barcode]) itemCalc[tx.barcode].qty -= Math.abs(tx.qty);
+            });
+            
+            Object.keys(itemCalc).forEach(bc => {
+                if(itemCalc[bc].qty > 0) {
+                    itemsToReturn.push({ barcode: bc, qty: itemCalc[bc].qty, finalPrice: itemCalc[bc].finalPrice });
+                }
+            });
+        } else {
+            itemsToReturn.push({ barcode: barcodeOrAll, qty: qty, finalPrice: finalPrice });
         }
 
-        document.getElementById('checkoutBtn').innerText = isReturnMode ? "確認退貨" : "確認結帳";
-        document.getElementById('checkoutBtn').disabled = false;
+        if(itemsToReturn.length === 0) return alert("沒有可退貨的商品！");
+
+        const payload = { isReturn: true, refOrderId: orderId, discountName: '退貨處理', items: itemsToReturn };
+
+        try {
+            document.getElementById('systemStatus').innerText = "退貨處理中...";
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+            const result = await res.json();
+            if (result.status === 'success') {
+                alert(`退貨成功！庫存已加回。退貨單號：${result.orderId}`);
+                fetchData(); // 重新整理訂單列表
+            } else alert("失敗：" + result.message);
+        } catch (err) { alert("連線錯誤"); }
+    }
+
+    // --- 相機邏輯保持不變 ---
+    let html5QrCode; let isCameraOpen = false; let lastScanTime = 0; let lastScannedCode = "";
+    function toggleCamera() {
+        initAudio();
+        const readerDiv = document.getElementById('reader'); const cameraBtn = document.getElementById('cameraBtn');
+        if (!isCameraOpen) {
+            readerDiv.style.display = 'block'; cameraBtn.innerText = "關閉相機"; cameraBtn.classList.add('active');
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, onScanSuccess).catch(err => {
+                alert("無法開啟相機！"); readerDiv.style.display = 'none'; cameraBtn.innerText = "📷 開啟相機"; cameraBtn.classList.remove('active');
+            });
+            isCameraOpen = true;
+        } else {
+            if (html5QrCode) html5QrCode.stop().then(() => {
+                readerDiv.style.display = 'none'; cameraBtn.innerText = "📷 開啟相機"; cameraBtn.classList.remove('active'); isCameraOpen = false;
+            });
+        }
+    }
+    function onScanSuccess(decodedText) {
+        const currentTime = new Date().getTime();
+        if (decodedText === lastScannedCode && (currentTime - lastScanTime) < 2000) return;
+        lastScannedCode = decodedText; lastScanTime = currentTime;
+        addToCart(decodedText);
     }
 </script>
 
