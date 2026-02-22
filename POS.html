@@ -92,33 +92,51 @@
     let todayOrdersDB = [];
     let cart = [];
     
-    // --- 音效產生器 (Web Audio API) ---
+    // --- 音效產生器 ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
     
-    function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); if(audioCtx.state === 'suspended') audioCtx.resume(); }
+    function initAudio() { 
+        if(!audioCtx) audioCtx = new AudioContext(); 
+        if(audioCtx.state === 'suspended') audioCtx.resume(); 
+    }
 
+    // 1. 更大聲、更像實體條碼槍的 BEEP 聲
     function playBeep() {
         initAudio();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5音
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        osc.start(); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); osc.stop(audioCtx.currentTime + 0.1);
+        osc.connect(gain); 
+        gain.connect(audioCtx.destination);
+        
+        // 改用方形波，聲音更具穿透力與機械感
+        osc.type = 'square'; 
+        osc.frequency.setValueAtTime(2500, audioCtx.currentTime); // 提高頻率
+        gain.gain.setValueAtTime(0.8, audioCtx.currentTime); // 音量調大
+        
+        osc.start(); 
+        // 讓聲音短促有力 (維持 0.08 秒)
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08); 
+        osc.stop(audioCtx.currentTime + 0.08);
     }
 
+    // 2. 真實的收銀機 Ka-Ching 聲
     function playSuccess() {
-        initAudio();
-        const playNote = (freq, start, dur) => {
+        // 載入真實的收銀機音效
+        const kaChingAudio = new Audio('https://soundbible.com/mp3/Cash%20Register%20Cha%20Ching-SoundBible.com-231115194.mp3');
+        kaChingAudio.volume = 1.0; // 確保最大聲
+        
+        // 播放音效 (加入 catch 避免部分手機瀏覽器阻擋自動播放)
+        kaChingAudio.play().catch(err => {
+            console.log("音效載入較慢或被阻擋", err);
+            // 備用方案：如果網路慢抓不到 MP3，用系統產生兩聲高音代替
+            initAudio();
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.type = 'sine'; osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.3, start);
-            osc.start(start); gain.gain.exponentialRampToValueAtTime(0.01, start + dur); osc.stop(start + dur);
-        };
-        playNote(1046.50, audioCtx.currentTime, 0.15); // C6
-        playNote(1318.51, audioCtx.currentTime + 0.15, 0.4); // E6
+            osc.type = 'triangle'; osc.frequency.value = 1200;
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            osc.start(); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3); osc.stop(audioCtx.currentTime + 0.3);
+        });
     }
 
     // --- 系統初始化 ---
