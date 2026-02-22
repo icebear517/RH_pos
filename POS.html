@@ -6,6 +6,7 @@
     <title>卡里善之樹 - 專櫃 POS 系統</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
+        /* 明亮純白底色與高對比度文字，維持老花眼友善 */
         body { font-family: '微軟正黑體', sans-serif; background-color: #ffffff; margin: 0; padding: 20px; color: #444; }
         .container { max-width: 900px; margin: auto; background: #ffffff; padding: 20px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; }
         h1 { text-align: center; font-size: 36px; color: #555; margin-bottom: 10px; letter-spacing: 2px; }
@@ -15,31 +16,35 @@
         .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         #barcodeInput { flex: 1; min-width: 250px; padding: 20px; font-size: 32px; border: 3px solid #b5eada; border-radius: 12px; outline: none; background-color: #fafafa; transition: 0.3s; }
         #barcodeInput:focus { border-color: #ffb7b2; box-shadow: 0 0 15px rgba(255, 183, 178, 0.4); background-color: #ffffff; }
-        .btn-camera { background-color: #a8d8ea; color: #444; font-size: 24px; padding: 0 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; }
+        
+        .btn-camera { background-color: #a8d8ea; color: #444; font-size: 24px; padding: 0 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+        .btn-camera:active { transform: scale(0.97); }
         .btn-camera.active { background-color: #ffb7b2; color: #fff; }
+        
         #reader { width: 100%; max-width: 500px; margin: 0 auto 20px; border-radius: 12px; overflow: hidden; display: none; }
         
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { border-bottom: 2px solid #f5f5f5; padding: 18px 10px; text-align: left; font-size: 26px; }
-        th { background-color: #ffffff; color: #999; font-size: 22px; }
-        .qty-btn { font-size: 24px; padding: 5px 15px; margin: 0 10px; cursor: pointer; background-color: #f0f0f0; border: none; border-radius: 8px; transition: 0.2s; }
+        th { background-color: #ffffff; color: #999; font-size: 22px; font-weight: normal; }
+        .qty-btn { font-size: 24px; padding: 5px 15px; margin: 0 10px; cursor: pointer; background-color: #f0f0f0; border: none; border-radius: 8px; color: #555; transition: 0.2s; }
+        .qty-btn:active { background-color: #e0e0e0; }
         
-        .summary { background: #ffffff; border: 2px dashed #dcdde1; padding: 20px; border-radius: 12px; font-size: 32px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .summary { background: #ffffff; border: 2px dashed #dcdde1; padding: 20px; border-radius: 12px; font-size: 32px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;}
         .discount-select { font-size: 24px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; outline: none; }
         .total-price { color: #ff9aa2; font-size: 42px; }
         
         .btn-group { display: flex; gap: 15px; flex-wrap: wrap; }
         button { flex: 1; min-width: 150px; padding: 25px; font-size: 30px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; color: #4a4a4a; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
         button:active { transform: scale(0.97); }
-        .btn-checkout { background-color: #b5eada; } 
-        .btn-return-mode { background-color: #ffe1a8; } 
-        .btn-clear { background-color: #e2f0cb; } 
+        .btn-checkout { background-color: #b5eada; } /* 粉薄荷綠 */
+        .btn-return-mode { background-color: #ffe1a8; } /* 粉鵝黃色 */
+        .btn-clear { background-color: #e2f0cb; } /* 粉抹茶綠 */
         
         /* 退貨專區樣式 */
         #returnView { display: none; }
         .order-card { background: #fffaf0; border: 2px solid #ffe1a8; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fff; padding-bottom: 10px; margin-bottom: 10px; font-size: 24px; font-weight: bold; color: #d35400; }
-        .order-item { display: flex; justify-content: space-between; align-items: center; font-size: 22px; padding: 10px 0; border-bottom: 1px dashed #ccc; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fff; padding-bottom: 10px; margin-bottom: 10px; font-size: 24px; font-weight: bold; color: #d35400; flex-wrap: wrap; gap: 10px;}
+        .order-item { display: flex; justify-content: space-between; align-items: center; font-size: 22px; padding: 10px 0; border-bottom: 1px dashed #ccc; flex-wrap: wrap; gap: 10px;}
         .return-btn { font-size: 20px; padding: 10px 20px; background-color: #ff9aa2; color: white; border: none; border-radius: 8px; cursor: pointer; margin-left: 10px; }
         .return-btn.full { background-color: #e74c3c; font-size: 24px; padding: 15px; }
     </style>
@@ -57,20 +62,28 @@
 
     <div id="salesView">
         <div class="input-group">
-            <input type="text" id="barcodeInput" placeholder="請掃描，或輸入條碼按Enter" autocomplete="off">
+            <input type="text" id="barcodeInput" placeholder="請掃描，或輸入條碼按Enter" autocomplete="off" autofocus>
             <button id="cameraBtn" class="btn-camera" onclick="toggleCamera()">📷 開啟相機</button>
         </div>
         <div id="reader"></div>
+        
         <div style="overflow-x: auto;">
             <table>
                 <thead><tr><th>品名</th><th>單價</th><th>數量</th><th>小計</th></tr></thead>
                 <tbody id="cartBody"></tbody>
             </table>
         </div>
+        
         <div class="summary">
-            <div><label>折扣：</label><select id="discountMode" class="discount-select"><option value="none">無折扣</option></select></div>
+            <div>
+                <label>折扣：</label>
+                <select id="discountMode" class="discount-select">
+                    <option value="none">無折扣</option>
+                </select>
+            </div>
             <div>總計：<span id="totalAmount" class="total-price">$0</span></div>
         </div>
+        
         <div class="btn-group">
             <button class="btn-clear" onclick="clearCart()">清除整單</button>
             <button class="btn-checkout" onclick="checkout()" id="checkoutBtn">確認結帳</button>
@@ -85,8 +98,9 @@
 </div>
 
 <script>
-
+    // 您最新的 GAS API 網址
     const API_URL = "https://script.google.com/macros/s/AKfycbzV6mZl2CSUrLBlPV1CwFwNi_z6l7A15B_a54tFFA2sEPIo8IPhmX9o1pbBBHFQsEoK/exec";
+    
     let productsDB = [];
     let discountsDB = [];
     let todayOrdersDB = [];
@@ -101,7 +115,7 @@
         if(audioCtx.state === 'suspended') audioCtx.resume(); 
     }
 
-    // 1. 更大聲、更像實體條碼槍的 BEEP 聲
+    // 1. 穿透力強的 BEEP 聲 (條碼掃描用)
     function playBeep() {
         initAudio();
         const osc = audioCtx.createOscillator();
@@ -109,27 +123,23 @@
         osc.connect(gain); 
         gain.connect(audioCtx.destination);
         
-        // 改用方形波，聲音更具穿透力與機械感
-        osc.type = 'square'; 
-        osc.frequency.setValueAtTime(2500, audioCtx.currentTime); // 提高頻率
-        gain.gain.setValueAtTime(0.8, audioCtx.currentTime); // 音量調大
+        osc.type = 'square'; // 方形波
+        osc.frequency.setValueAtTime(2500, audioCtx.currentTime); 
+        gain.gain.setValueAtTime(0.8, audioCtx.currentTime); 
         
         osc.start(); 
-        // 讓聲音短促有力 (維持 0.08 秒)
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08); 
         osc.stop(audioCtx.currentTime + 0.08);
     }
 
-    // 2. 真實的收銀機 Ka-Ching 聲
+    // 2. 真實的收銀機 Ka-Ching 聲 (結帳成功用)
     function playSuccess() {
-        // 載入真實的收銀機音效
         const kaChingAudio = new Audio('https://soundbible.com/mp3/Cash%20Register%20Cha%20Ching-SoundBible.com-231115194.mp3');
-        kaChingAudio.volume = 1.0; // 確保最大聲
+        kaChingAudio.volume = 1.0; 
         
-        // 播放音效 (加入 catch 避免部分手機瀏覽器阻擋自動播放)
         kaChingAudio.play().catch(err => {
             console.log("音效載入較慢或被阻擋", err);
-            // 備用方案：如果網路慢抓不到 MP3，用系統產生兩聲高音代替
+            // 備用方案：系統高音
             initAudio();
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
@@ -149,11 +159,13 @@
             const response = await fetch(API_URL);
             const data = await response.json();
             if(data.status === 'success') {
-                productsDB = data.products; discountsDB = data.discounts; todayOrdersDB = data.todayOrders;
+                productsDB = data.products; 
+                discountsDB = data.discounts; 
+                todayOrdersDB = data.todayOrders || [];
                 updateDiscountSelect();
                 document.getElementById('systemStatus').innerText = "✅ 系統準備就緒";
                 document.getElementById('systemStatus').style.color = "#27ae60";
-                renderReturnOrders(); // 預先渲染退貨列表
+                renderReturnOrders(); 
             }
         } catch (error) {
             document.getElementById('systemStatus').innerText = "❌ 連線失敗，請檢查網路";
@@ -177,7 +189,7 @@
             document.getElementById('tabReturn').style.color = '#444';
             document.getElementById('tabSales').style.background = '#f5f5f5';
             document.getElementById('tabSales').style.color = '#999';
-            renderReturnOrders(); // 確保資料是最新的
+            renderReturnOrders(); 
         }
     }
 
@@ -196,15 +208,21 @@
     document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             const barcode = this.value.trim();
-            if (barcode !== "") { addToCart(barcode); this.value = ''; }
+            if (barcode !== "") { 
+                addToCart(barcode); 
+                this.value = ''; 
+            }
         }
     });
 
     function addToCart(barcode) {
         const product = productsDB.find(p => p.barcode === barcode);
-        if (!product) { alert("找不到條碼：" + barcode); return; }
+        if (!product) { 
+            alert("找不到條碼：" + barcode); 
+            return; 
+        }
         
-        playBeep(); // 播放掃碼音效
+        playBeep(); // 播放響亮的掃碼音效
 
         const existingItem = cart.find(item => item.barcode === barcode);
         if (existingItem) existingItem.qty += 1;
@@ -235,11 +253,17 @@
         cart[index].qty += delta; if (cart[index].qty <= 0) cart.splice(index, 1);
         renderCart(); document.getElementById('barcodeInput').focus();
     }
-    function clearCart() { cart = []; document.getElementById('discountMode').value = 'none'; renderCart(); }
+    
+    function clearCart() { 
+        cart = []; 
+        document.getElementById('discountMode').value = 'none'; 
+        renderCart(); 
+        document.getElementById('barcodeInput').focus();
+    }
 
     async function checkout() {
         if (cart.length === 0) return alert("購物車是空的！");
-        initAudio(); 
+        initAudio(); // 預先喚醒音效引擎
         
         const btn = document.getElementById('checkoutBtn');
         btn.innerText = "處理中..."; btn.disabled = true;
@@ -258,7 +282,7 @@
             const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
             const result = await res.json();
             if (result.status === 'success') {
-                playSuccess(); // 播放結帳成功音效
+                playSuccess(); // 播放收銀機 Ka-Ching 音效
                 alert(`交易成功！單號：${result.orderId}`);
                 clearCart();
                 fetchData(); // 重新抓取資料更新今日訂單
@@ -272,6 +296,10 @@
     function renderReturnOrders() {
         const listDiv = document.getElementById('ordersList');
         listDiv.innerHTML = '';
+        if(todayOrdersDB.length === 0) {
+            listDiv.innerHTML = '<h3 style="text-align:center; color:#999;">目前沒有今日訂單</h3>';
+            return;
+        }
         
         // 整理訂單，計算剩下可退的數量
         let ordersMap = {};
@@ -289,7 +317,7 @@
             }
             if(tx.type === '售出') {
                 ordersMap[mainId].items[tx.barcode].qtySold += tx.qty;
-                ordersMap[mainId].items[tx.barcode].finalPrice = tx.finalPrice / tx.qty; // 取得單件實收金額
+                ordersMap[mainId].items[tx.barcode].finalPrice = tx.finalPrice / tx.qty; 
             } else if (tx.type === '退貨') {
                 ordersMap[mainId].items[tx.barcode].qtyReturned += Math.abs(tx.qty);
             }
@@ -329,7 +357,6 @@
         
         let itemsToReturn = [];
         if(barcodeOrAll === 'all') {
-            // 找出該訂單所有可退的商品
             const txs = todayOrdersDB.filter(tx => tx.orderId === orderId && tx.type === '售出');
             const returns = todayOrdersDB.filter(tx => tx.refOrderId === orderId && tx.type === '退貨');
             
@@ -361,12 +388,12 @@
             const result = await res.json();
             if (result.status === 'success') {
                 alert(`退貨成功！庫存已加回。退貨單號：${result.orderId}`);
-                fetchData(); // 重新整理訂單列表
+                fetchData(); 
             } else alert("失敗：" + result.message);
         } catch (err) { alert("連線錯誤"); }
     }
 
-    // --- 相機邏輯保持不變 ---
+    // --- 相機邏輯 ---
     let html5QrCode; let isCameraOpen = false; let lastScanTime = 0; let lastScannedCode = "";
     function toggleCamera() {
         initAudio();
